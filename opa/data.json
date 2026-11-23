@@ -1,0 +1,70 @@
+{
+  "platform": {
+    "super_admins": [
+      "super_admin_1",
+      "super_admin_2"
+    ],
+    "inactive": []
+  },
+  "teams": {
+    "manpreet_org": {
+      "name": "Manpreet",
+      "l1": [
+        "amit"
+      ],
+      "l2": [],
+      "members": [
+        "manpreet"
+      ]
+    },
+    "sol_engg": {
+      "name": "Sol Engg",
+      "l1": [
+        "manpreet"
+      ],
+      "l2": [
+        "amit"
+      ],
+      "members": [
+        "sol_engg_lead"
+      ]
+    },
+    "app_engg": {
+      "name": "App Engg",
+      "l1": [
+        "sol_engg_lead"
+      ],
+      "l2": [
+        "manpreet"
+      ],
+      "members": [
+        "app_engg_member_1",
+        "app_engg_member_2"
+      ]
+    }
+  },
+  "catalogs": {
+    "app_engg_catalogue": {
+      "team": "app_engg",
+      "creator": "sol_engg_lead",
+      "visible_to": [
+        "App Engg"
+      ]
+    },
+    "cloud_catalogue": {
+      "team": "sol_engg",
+      "creator": "amit",
+      "visible_to": [
+        "App Engg",
+        "Sol Engg"
+      ]
+    },
+    "iam_catalogue": {
+      "team": "sol_engg",
+      "creator": "amit",
+      "visible_to": [
+        "All teams"
+      ]
+    }
+  }
+}

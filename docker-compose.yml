@@ -1,0 +1,91 @@
+# Starts the whole platform:  docker compose up --build
+# Then call the gateway on http://localhost:8080 (see requests.http for examples).
+name: self-service-portal
+
+x-service: &service
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+    opa:
+      condition: service_started
+  environment: &env
+    SPRING_PROFILES_ACTIVE: docker
+    DB_HOST: postgres
+    DB_USER: portal
+    DB_PASSWORD: portal
+    OPA_URL: http://opa:8181
+    AUDIT_URL: http://audit-service:8084
+    NOTIFICATION_URL: http://notification-service:8085
+    CATALOG_URL: http://catalog-service:8081
+    PROVISIONING_URL: http://provisioning-service:8083
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: portal
+      POSTGRES_PASSWORD: portal
+      POSTGRES_DB: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/init-databases.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portal"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  opa:
+    image: openpolicyagent/opa:0.70.0
+    command: ["run", "--server", "--addr=0.0.0.0:8181", "--log-level=info", "/policies"]
+    volumes:
+      - ./opa:/policies:ro
+    ports:
+      - "8181:8181"
+
+  gateway:
+    build: { context: ., dockerfile: services/gateway/Dockerfile }
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      CATALOG_URL: http://catalog-service:8081
+      REQUEST_URL: http://request-service:8082
+      PROVISIONING_URL: http://provisioning-service:8083
+      AUDIT_URL: http://audit-service:8084
+      NOTIFICATION_URL: http://notification-service:8085
+      # Turn SSO on by setting these (and the "sso" profile). Leave off only on your own machine.
+      AUTH_ENABLED: "false"
+    depends_on: [catalog-service, request-service, provisioning-service, audit-service, notification-service]
+
+  catalog-service:
+    <<: *service
+    build: { context: ., dockerfile: services/catalog-service/Dockerfile }
+    ports: ["8081:8081"]
+
+  request-service:
+    <<: *service
+    build: { context: ., dockerfile: services/request-service/Dockerfile }
+    ports: ["8082:8082"]
+    environment:
+      <<: *env
+      SUPER_ADMINS: super_admin_1,super_admin_2
+
+  provisioning-service:
+    <<: *service
+    build: { context: ., dockerfile: services/provisioning-service/Dockerfile }
+    ports: ["8083:8083"]
+
+  audit-service:
+    <<: *service
+    build: { context: ., dockerfile: services/audit-service/Dockerfile }
+    ports: ["8084:8084"]
+
+  notification-service:
+    <<: *service
+    build: { context: ., dockerfile: services/notification-service/Dockerfile }
+    ports: ["8085:8085"]
+
+volumes:
+  pgdata:

@@ -1,0 +1,40 @@
+server:
+  port: 8082
+spring:
+  application:
+    name: request-service
+  datasource:
+    url: jdbc:h2:mem:requests;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+portal:
+  opa:
+    url: ${OPA_URL:http://localhost:8181}
+  audit:
+    url: ${AUDIT_URL:http://localhost:8084}
+  notification:
+    url: ${NOTIFICATION_URL:http://localhost:8085}
+  catalog:
+    url: ${CATALOG_URL:http://localhost:8081}
+  provisioning:
+    url: ${PROVISIONING_URL:http://localhost:8083}
+  # Super admins can see every pending request. OPA decides whether they may act on it.
+  super-admins: ${SUPER_ADMINS:super_admin_1,super_admin_2}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:postgres}:5432/requests
+    username: ${DB_USER:portal}
+    password: ${DB_PASSWORD:portal}

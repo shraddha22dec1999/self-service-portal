@@ -1,0 +1,97 @@
+### Examples for the VS Code REST Client or IntelliJ HTTP client.
+### Local mode has no SSO, so you say who you are with the X-User header.
+@gw = http://localhost:8080
+
+### Who am I
+GET {{gw}}/api/v1/me
+X-User: app_engg_member_1
+
+### Catalogues I am allowed to see (OPA decides)
+GET {{gw}}/api/v1/catalogues
+X-User: app_engg_member_1
+
+### One catalogue with its capability cards and options
+GET {{gw}}/api/v1/catalogues/app_engg_catalogue
+X-User: app_engg_member_1
+
+### Service details tab: services provided and tools and resources
+GET {{gw}}/api/v1/catalogues/app_engg_catalogue/service-details
+X-User: app_engg_member_1
+
+### Raise a request. Backup owner is mandatory.
+POST {{gw}}/api/v1/requests
+X-User: app_engg_member_1
+Content-Type: application/json
+
+{
+  "catalogueId": "app_engg_catalogue",
+  "capability": "Grant repository access",
+  "option": "Read access",
+  "justification": "Need to review the payments repository",
+  "backupOwner": "app_engg_member_2",
+  "permanent": false,
+  "months": 1,
+  "days": 0
+}
+
+### My requests
+GET {{gw}}/api/v1/requests?scope=mine
+X-User: app_engg_member_1
+
+### Requests waiting for the L1 approver
+GET {{gw}}/api/v1/requests?scope=approvals
+X-User: sol_engg_lead
+
+### Full detail of one request
+GET {{gw}}/api/v1/requests/REQ-1001
+X-User: sol_engg_lead
+
+### Approve (L1)
+POST {{gw}}/api/v1/requests/REQ-1001/decision
+X-User: sol_engg_lead
+Content-Type: application/json
+
+{ "decision": "APPROVED", "comment": "Fine for one month" }
+
+### Approve (L2). After this the request becomes ACTIVE.
+POST {{gw}}/api/v1/requests/REQ-1001/decision
+X-User: manpreet
+Content-Type: application/json
+
+{ "decision": "APPROVED" }
+
+### Activity of one request
+GET {{gw}}/api/v1/requests/REQ-1001/activity
+X-User: sol_engg_lead
+
+### Delegate a waiting step
+POST {{gw}}/api/v1/requests/REQ-1001/delegate
+X-User: sol_engg_lead
+Content-Type: application/json
+
+{ "to": "app_engg_member_2" }
+
+### Audit log and its integrity check
+GET {{gw}}/api/v1/audit
+X-User: super_admin_1
+
+###
+GET {{gw}}/api/v1/audit/verify
+X-User: super_admin_1
+
+### Change who can see a catalogue. This is an OPA change request.
+### It needs the same two approvals. When approved, provisioning publishes it to OPA.
+POST {{gw}}/api/v1/requests
+X-User: sol_engg_lead
+Content-Type: application/json
+
+{
+  "catalogueId": "app_engg_catalogue",
+  "capability": "Grant repository access",
+  "option": "Read access",
+  "justification": "Let Sol Engg see the Product catalogue",
+  "backupOwner": "manpreet",
+  "permanent": true,
+  "opaPath": "catalogs/app_engg_catalogue",
+  "opaValue": { "team": "app_engg", "creator": "sol_engg_lead", "visible_to": ["App Engg", "Sol Engg"] }
+}

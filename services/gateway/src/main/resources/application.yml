@@ -1,0 +1,60 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: ${UI_ORIGIN:http://localhost:5173}
+            allowedMethods: [GET, POST, PUT, DELETE, OPTIONS]
+            allowedHeaders: "*"
+      routes:
+        - id: catalog
+          uri: ${CATALOG_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/catalogues/**
+        - id: requests
+          uri: ${REQUEST_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/requests/**
+        - id: provisioning
+          uri: ${PROVISIONING_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/provisioning/**
+        - id: audit
+          uri: ${AUDIT_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/v1/audit/**,/api/v1/analytics/**
+        - id: notifications
+          uri: ${NOTIFICATION_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/v1/notifications/**
+
+portal:
+  auth:
+    # false: local development. The caller sends X-User itself. Never use in production.
+    # true : every call needs a valid SSO token. X-User is set from the token.
+    enabled: ${AUTH_ENABLED:false}
+    user-claim: ${AUTH_USER_CLAIM:preferred_username}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+---
+spring:
+  config:
+    activate:
+      on-profile: sso
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI}
+portal:
+  auth:
+    enabled: true
