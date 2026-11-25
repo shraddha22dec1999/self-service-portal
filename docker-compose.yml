@@ -1,5 +1,6 @@
 # Starts the whole platform:  docker compose up --build
-# Then call the gateway on http://localhost:8080 (see requests.http for examples).
+# Then open the portal on http://localhost:3000, or call the gateway on http://localhost:8080
+# (see requests.http for examples).
 name: self-service-portal
 
 x-service: &service
@@ -58,6 +59,15 @@ services:
       # Turn SSO on by setting these (and the "sso" profile). Leave off only on your own machine.
       AUTH_ENABLED: "false"
     depends_on: [catalog-service, request-service, provisioning-service, audit-service, notification-service]
+
+  frontend:
+    build: { context: ./frontend }
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment:
+      GATEWAY_URL: http://gateway:8080
+    depends_on: [gateway]
 
   catalog-service:
     <<: *service

@@ -42,6 +42,38 @@ In local mode there is no SSO. You say who you are with the `X-User` header. The
 Without Docker: start OPA (`opa run --server opa/`), then run each service with
 `mvn -pl services/<name> -am spring-boot:run`. Without the `docker` profile each service uses an in-memory H2 database.
 
+## Frontend
+
+React + TypeScript (Vite) in `frontend/`. With `docker compose up --build` it runs on
+http://localhost:3000. nginx serves the app and forwards `/api` to the gateway, so the browser talks to one origin.
+
+To work on it with hot reload, start the backend, then:
+
+```
+cd frontend
+npm install
+npm run dev          # http://localhost:5173, /api goes to http://localhost:8080
+```
+
+Point it at a deployed gateway with `GATEWAY_URL=https://gateway.example.com npm run dev`.
+
+In local mode the sign-in page lets you pick one of the sample people and sends `X-User`. For SSO, copy
+`frontend/.env.example` to `.env.local` and set `VITE_OIDC_AUTHORITY` and `VITE_OIDC_CLIENT_ID` (or pass them
+as Docker build args), register `<ui origin>/auth/callback` as a redirect URI with your identity provider, and
+turn SSO on at the gateway (see below).
+
+| Page | Who | Calls |
+| --- | --- | --- |
+| Catalogues, catalogue detail, request form | everyone | `/catalogues`, `/service-details`, `POST /requests` |
+| My requests, request detail (cancel, remove access, retry) | requester | `/requests?scope=mine`, `/requests/{id}`, `/activity`, `/provisioning/*` |
+| Approvals (approve, reject, delegate) | approvers | `/requests?scope=approvals\|decided`, `/decision`, `/delegate` |
+| Notifications | everyone | `/notifications` |
+| Add capability, edit tools | catalogue owner and approvers | `POST /capabilities`, `PUT /tools` |
+| New catalogue, audit log, analytics | admins (`VITE_ADMIN_USERS`) | `POST /catalogues`, `/audit*`, `/analytics/summary` |
+
+The admin menu is chosen by `VITE_ADMIN_USERS` until `GET /me` returns roles. Hiding a menu is not security:
+the backend must still refuse callers who are not allowed.
+
 ## The main flow
 
 1. `POST /api/v1/requests` as `app_engg_member_1`. OPA checks the backup owner. OPA also says who L1 and L2 are for that person.
